@@ -5,15 +5,17 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Http\Request;
 use App\Http\Requests;
-use App\Http\Controllers\Controller;
 
 //model of recipe
 use App\Recipe;
+
 
 class RecipeController extends Controller
 {
     /*****************************************/
     //http://www.sitepoint.com/build-rest-resources-laravel//
+    //http://code.tutsplus.com/tutorials/laravel-4-a-start-at-a-restful-api-updated--net-29785//
+    //http://stackoverflow.com/questions/27940690/laravel-routing-does-not-work-with-post
 
     /**
      * Display a listing of the resource.
@@ -43,23 +45,14 @@ class RecipeController extends Controller
                 ];
             }*/
 
-        }catch (Exception $e){
+        }catch (\Exception $e){
             $statusCode = 400;
         }finally{
             return Response::json($response, $statusCode);
         }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-        echo '222';
-    }
+
 
     /**
      * Store a newly created resource in storage.
@@ -67,10 +60,32 @@ class RecipeController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+    public function storeInfo(Request $request)
     {
-        //
+        echo 'nix, sera';die();
+        $recipe = new Recipe();
+        $recipe->box_tye = 'vegetarian';
+        $recipe->title = 'teste';
+        $recipe->slug = 'teste';
+        $recipe->short_title = 'vegetarian';
+
+        $recipe->save();
+
+        // Validation and Filtering is sorely needed!!
+        // Seriously, I'm a bad person for leaving that out.
+
+        /*
+
+        return Response::json(array(
+            'error' => false,
+            'urls' => $urls->toArray()),
+            200
+        );*/
     }
+
+
+
+
 
     /**
      * Display the specified resource.
@@ -80,30 +95,21 @@ class RecipeController extends Controller
      */
     public function show($id)
     {
-        $photo = Recipe::find($id);
-        exit();
-        /*try{
-            $photo = Recipe::find($id);
-            echo '11';
-            exit();
-            $statusCode = 200;
-            $response = [ "photo" => [
-                'id' => (int) $id,
-                'user_id' => (int) $photo->user_id,
-                'title' => $photo->title,
-                'url' => $photo->url,
-                'category' => (int) $photo->category,
-                'description' => $photo->description
-            ]];
 
-        }catch(Exception $e){
+        try{
+            $data = Recipe::find($id);
+
+            $statusCode = 200;
+            $response = [ "recipe" => $data];
+
+        }catch(\Exception $e){
             $response = [
-                "error" => "File doesn`t exists"
+                "error" => $e->getMessage()
             ];
             $statusCode = 404;
         }finally{
             return Response::json($response, $statusCode);
-        }*/
+        }
     }
 
     /**
