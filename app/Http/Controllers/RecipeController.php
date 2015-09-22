@@ -9,6 +9,10 @@ use App\Http\Requests;
 //model of recipe
 use App\Recipe;
 
+//create pagination
+use Illuminate\Pagination;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class RecipeController extends Controller
 {
@@ -22,31 +26,38 @@ class RecipeController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        //
+        
         try{
+            $data = Recipe::allWithPagination($request);
+           
             $statusCode = 200;
-            $response = [
-                'photos'  => []
-            ];
-
-            /*$photos = Photo::all()->take(9);
-
-            foreach($photos as $photo){
-
-                $response['photos'][] = [
-                    'id' => $photo->id,
-                    'user_id' => $photo->user_id,
-                    'url' => $photo->url,
-                    'title' => $photo->title,
-                    'description' => $photo->description,
-                    'category' => $photo->category,
-                ];
-            }*/
-
+            $response = [ "recipes" => $data, '_token'=>csrf_token()];
+            
         }catch (\Exception $e){
-            $statusCode = 400;
+            $response = [
+                "error" => $e->getMessage()
+            ];
+            $statusCode = 404;
+        }finally{
+            return Response::json($response, $statusCode);
+        }
+    }
+    
+    public function listByfield(Request $request, $nameField, $valueField){
+        try{
+            $extraParams = array('nameField' => $nameField, 'valueField' => $valueField);
+            $data = Recipe::allWithPagination($request, $extraParams);
+           
+            $statusCode = 200;
+            $response = [ "recipe" => $data, '_token'=>csrf_token()];
+
+        }catch(\Exception $e){
+            $response = [
+                "error" => $e->getMessage()
+            ];
+            $statusCode = 404;
         }finally{
             return Response::json($response, $statusCode);
         }
@@ -60,14 +71,17 @@ class RecipeController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function storeInfo(Request $request)
+    public function store(Request $request)
     {
-        echo 'nix, sera';die();
+        
+        
         $recipe = new Recipe();
-        $recipe->box_tye = 'vegetarian';
-        $recipe->title = 'teste';
-        $recipe->slug = 'teste';
-        $recipe->short_title = 'vegetarian';
+        $lstFields = $recipe::getFieldsModel();
+        foreach($lstFields as $field){
+            $recipe->$field = $request->input($field);
+        }
+        
+        
 
         $recipe->save();
 
@@ -83,8 +97,25 @@ class RecipeController extends Controller
         );*/
     }
 
-
-
+    /**
+     * token that is going to be used in post method
+     * 
+     * @return array with token string
+     */
+    public function getToken()
+    {
+        try{
+            $statusCode = 200;
+            $response = [ '_token'=>csrf_token()];
+        }catch(\Exception $e){
+            $response = [
+                "error" => $e->getMessage()
+            ];
+            $statusCode = 404;
+        }finally{
+            return Response::json($response, $statusCode);
+        }
+    }
 
 
     /**
@@ -95,12 +126,11 @@ class RecipeController extends Controller
      */
     public function show($id)
     {
-
         try{
             $data = Recipe::find($id);
 
             $statusCode = 200;
-            $response = [ "recipe" => $data];
+            $response = [ "recipe" => $data, '_token'=>csrf_token()];
 
         }catch(\Exception $e){
             $response = [
@@ -111,6 +141,8 @@ class RecipeController extends Controller
             return Response::json($response, $statusCode);
         }
     }
+    
+    
 
     /**
      * Show the form for editing the specified resource.

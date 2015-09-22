@@ -39,33 +39,35 @@ class Recipe extends Model
         'in_your_box',
         'gousto_reference'];
 
+    public static function getFieldsModel()
+    {
+        return self::$lstFieldsModel;
+    }
     /**
      * Read excel files to all functions in this model
      *
      * @return mixed
      */
     private static function loadXlsFile(){
-
         //read exel files
         $inputCsv = Reader::createFromPath(storage_path() . '/recipes.csv');
         $inputCsv->setDelimiter("\t");
+        //$inputCsv->setOffset(1);
         return $inputCsv;
     }
-
-
-    public static function find($id, $columns = ['*']) {
-        $extraParams = array('id'=>$id, 'columns'=>$columns);
-        $csv = self::loadXlsFile();
-
+    
+    private static function modelFieldsExists($columns){
+        $fieldsModel    = self::getFieldsModel();
+        
         $arrNameFieldsCsv = [];
         if($columns == ['*']){
-            $arrNameFieldsCsv = self::$lstFieldsModel;
+            $arrNameFieldsCsv = $fieldsModel;
         }else{
             $fieldsNotExists = [];
             $isValid = 1;
             //validate all columns exists
             foreach($columns as $column){
-                if(!in_array($column, self::$lstFieldsModel)){
+                if(!in_array($column, $fieldsModel)){
                     $isValid = 0;
                     $fieldsNotExists[] = $column;
                 }
@@ -77,17 +79,79 @@ class Recipe extends Model
 
             $arrNameFieldsCsv = $columns;
         }
+        
+        return $arrNameFieldsCsv;
+    }
 
+    public static function find($id, $columns = ['*']) {
+        $extraParams    = array('id'=>$id, 'columns'=>$columns);
+        $csv            = self::loadXlsFile();
+        
+        
+        
+        $arrNameFieldsCsv = self::modelFieldsExists($columns);
+        
 
         $result = $csv->addFilter(function ($row) use ($extraParams) {
             //column zero, because it is the number of column id
             $id = (int)$extraParams['id'];
-            return $id == $row[0]; //we are looking for the year 2010
+            return $id == $row[0]; 
         })->fetchAssoc($arrNameFieldsCsv);
 
-        return $result[0];
+        return count($result) == 1 ? reset($result) : [];
     }
 
+    public static function allWithPagination($request, $extraParams = NULL, $columns = ['*'])
+    {
+        //FILTER FIELDS BY SOMETHING
+        $nameField = $extraParams['nameField'];
+        $valueField = $extraParams['valueField'];
+        
+        
+            
+        $offsetHeader = $request->header('offset');
+        $offset = isset($offsetHeader) && !empty($offsetHeader) ? $offsetHeader : 1;
+        
+        $limitHeader = $request->header('limit');
+        $limit = isset($limitHeader) && !empty($limitHeader) ? $limitHeader : 5;
+        
+        
+        $csv            = self::loadXlsFile();
+        $csv->setOffset(1);
+        
+        $arrNameFieldsCsv = self::modelFieldsExists($columns);
+        
+        
+        //make pagination
+        $csv->setOffset($offset);
+        $csv->setLimit($limit);
+        
+        //Validate that row of csv has all values
+        $csv->addFilter(function ($row) {
+                        return isset($row[0], $row[1], $row[2], $row[3], $row[4], 
+                                    $row[5], $row[6], $row[7], $row[8], $row[9], 
+                                    $row[10], $row[11], $row[12], $row[13], $row[14], 
+                                    $row[15], $row[16], $row[17], $row[18], $row[19], 
+                                    $row[20], $row[21], $row[22], $row[23], $row[24],
+                                    $row[25]); 
+                    });
+                    
+        //make a where in the csv file
+        if(!empty($nameField) && !empty($valueField)){
+            $lstFieldsModel = self::getFieldsModel();
+            $keyValueSelected = array_search($nameField, $lstFieldsModel);
+            $extraParams['keyValueSelected'] = $keyValueSelected;
+            $csv->addFilter(function ($row) use ($extraParams) {
+                echo $extraParams['valueField'] ."/". $row[$extraParams['keyValueSelected']].PHP_EOL;
+                return $extraParams['valueField'] == $row[$extraParams['keyValueSelected']]; 
+            });
+        }
+        $result = $csv->fetchAssoc($arrNameFieldsCsv);
+        
+                  
+        return $result;
+    }
+    
     public function save(array $options = [])
     {
         $fieldsToSave = $this->toArray();

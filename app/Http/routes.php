@@ -18,17 +18,14 @@ Route::get('/', function () {
 
 Route::group(array('prefix' => 'api/'), function()
 {
+    Route::get('recipe/gettoken', 'RecipeController@getToken');
+    
     Route::get('recipe/{id}', 'RecipeController@show');
-    Route::any('recipe', 'RecipeController@storeInfo');
-    //Route::resource('recipe', 'RecipeController');
-
-    /*Route::put('foo/bar', function () {
-        //
-    });
-
-    Route::delete('foo/bar', function () {
-        //
-    });*/
-    //Route::resource('recipe', 'RecipeController');
-
+    Route::get('recipe/{name_field}/{value_field}', 'RecipeController@listByfield');
+    
+    Route::post('recipe', 'RecipeController@store');
+    
+    Route::get('recipe', 'RecipeController@index');
+    
+    
 });
