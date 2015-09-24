@@ -6,13 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 //libs of excel
 use League\Csv\Reader;
+use League\Csv\Writer;
 
 
 
 class Recipe extends Model
 {
-
-    private static $lstFieldsModel = ['id',
+    public $timestamps = false;
+    
+    private static $fieldsSave =  [];
+    private static $lstFieldsModel = [
+        'id',
         'created_at',
         'updated_at',
         'box_type',
@@ -48,12 +52,17 @@ class Recipe extends Model
      *
      * @return mixed
      */
-    private static function loadXlsFile(){
+    private static function loadXlsFile($typeRead){
         //read exel files
-        $inputCsv = Reader::createFromPath(storage_path() . '/recipes.csv');
-        $inputCsv->setDelimiter("\t");
-        //$inputCsv->setOffset(1);
-        return $inputCsv;
+        $csvReader = Reader::createFromPath(storage_path() . '/recipes.csv');
+        $csvReader->setDelimiter("\t");
+        
+        $csvWriter = Writer::createFromPath(storage_path() . '/recipes.csv', 'a');
+        $csvWriter->setDelimiter("\t");
+        
+        $reader = array('reader'=>$csvReader, 'writer'=>$csvWriter);
+        
+        return $reader[$typeRead];
     }
     
     private static function modelFieldsExists($columns){
@@ -85,9 +94,7 @@ class Recipe extends Model
 
     public static function find($id, $columns = ['*']) {
         $extraParams    = array('id'=>$id, 'columns'=>$columns);
-        $csv            = self::loadXlsFile();
-        
-        
+        $csv            = self::loadXlsFile('reader');
         
         $arrNameFieldsCsv = self::modelFieldsExists($columns);
         
@@ -107,23 +114,17 @@ class Recipe extends Model
         $nameField = $extraParams['nameField'];
         $valueField = $extraParams['valueField'];
         
-        
-            
         $offsetHeader = $request->header('offset');
-        $offset = isset($offsetHeader) && !empty($offsetHeader) ? $offsetHeader : 0;
+        $offset = isset($offsetHeader) && !empty($offsetHeader) ? $offsetHeader : 1;
         
         $limitHeader = $request->header('limit');
         $limit = isset($limitHeader) && !empty($limitHeader) ? $limitHeader : 5;
         
         
-        $csv = self::loadXlsFile();
-        //$csv->setOffset(1);
-        
+        $csv = self::loadXlsFile('reader');
         $arrNameFieldsCsv = self::modelFieldsExists($columns);
         
-        
-
-        
+       
         //Validate that row of csv has all values
         $csv->addFilter(function ($row) {
                         return isset($row[0], $row[1], $row[2], $row[3], $row[4],
@@ -155,11 +156,57 @@ class Recipe extends Model
         return $result;
     }
     
+    public function setFieldsSave($arrInfFields){
+        self::$fieldsSave = $arrInfFields;
+    }
+    public function getFieldsSave(){
+        return self::$fieldsSave;
+    }
     public function save(array $options = [])
-    {
-        $fieldsToSave = $this->toArray();
+    {   
+        //Validate number fields
+        $fieldsModel    = self::getFieldsModel();
+        $numberFields = count($fieldsModel);
+       
+        
+        $csvWriter = self::loadXlsFile('writer');
+        $csvReader = self::loadXlsFile('reader');
 
-        var_dump($fieldsToSave);
+        
+        //GET LAST ID
+        $csvReader->addFilter(function ($row) {
+                        return isset($row[0], $row[1], $row[2], $row[3], $row[4],
+                                    $row[5], $row[6], $row[7], $row[8], $row[9],
+                                    $row[10], $row[11], $row[12], $row[13], $row[14],
+                                    $row[15], $row[16], $row[17], $row[18], $row[19],
+                                    $row[20], $row[21], $row[22], $row[23], $row[24],
+                                    $row[25]);
+                    });
+        $data = $csvReader->fetchAssoc($fieldsModel);
+        $idToBeInserted = count($data);
+        
+        //insert missing fields 
+        $this->id = $idToBeInserted;
+        $this->created_at = date('d/m/Y H:i:s');
+        $this->updated_at = date('d/m/Y H:i:s'); 
+        foreach($this->getFieldsSave() as $key => $value){
+            $this->$key = $value;
+        }
+            
+        
+        $result = 'OK';
+        try{
+            //validators
+            $csvWriter->addValidator(function (array $row) use($numberFields) {
+                return $numberFields == count($row);
+            }, 'row_must_contain_'.$numberFields.'_cells');
+
+            $csvWriter->insertOne($this->toArray());
+        } catch (Exception $ex) {
+            $result = 'KO';
+        }
+        
+        return $result;
     }
 
 }

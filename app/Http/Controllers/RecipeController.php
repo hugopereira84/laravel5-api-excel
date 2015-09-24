@@ -28,7 +28,6 @@ class RecipeController extends Controller
      */
     public function index(Request $request)
     {
-        
         try{
             $data = Recipe::allWithPagination($request);
            
@@ -73,28 +72,37 @@ class RecipeController extends Controller
      */
     public function store(Request $request)
     {
-        
-        
-        $recipe = new Recipe();
-        $lstFields = $recipe::getFieldsModel();
-        foreach($lstFields as $field){
-            $recipe->$field = $request->input($field);
+        try{
+            
+            $fieldsNotToSet = ['id', 'created_at', 'updated_at'];
+            $recipe = new Recipe();
+            $lstFields = $recipe::getFieldsModel();
+           
+            $arrInfFields = [];
+            foreach($lstFields as $field){
+                if(in_array($field, $fieldsNotToSet)){
+                    continue;
+                }
+                $valueField = $request->input($field);
+                $arrInfFields[$field] = isset($valueField) ? $request->input($field) : "" ;
+            }
+            $recipe->setFieldsSave($arrInfFields);
+            $data = $recipe->save();
+            
+            $statusCode = 200;
+            $response = [ "result" => $data, '_token'=>csrf_token()];
+            
+        }catch (\Exception $e){
+            $response = [
+                "error" => $e->getMessage()
+            ];
+            $statusCode = 404;
+        }finally{
+            return Response::json($response, $statusCode);
         }
         
+
         
-
-        $recipe->save();
-
-        // Validation and Filtering is sorely needed!!
-        // Seriously, I'm a bad person for leaving that out.
-
-        /*
-
-        return Response::json(array(
-            'error' => false,
-            'urls' => $urls->toArray()),
-            200
-        );*/
     }
 
     /**
