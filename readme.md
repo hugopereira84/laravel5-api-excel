@@ -1,27 +1,27 @@
-## Laravel PHP Framework
+## Laravel PHP Framework api with csv as database
 
-[![Build Status](https://travis-ci.org/laravel/framework.svg)](https://travis-ci.org/laravel/framework)
-[![Total Downloads](https://poser.pugx.org/laravel/framework/d/total.svg)](https://packagist.org/packages/laravel/framework)
-[![Latest Stable Version](https://poser.pugx.org/laravel/framework/v/stable.svg)](https://packagist.org/packages/laravel/framework)
-[![Latest Unstable Version](https://poser.pugx.org/laravel/framework/v/unstable.svg)](https://packagist.org/packages/laravel/framework)
-[![License](https://poser.pugx.org/laravel/framework/license.svg)](https://packagist.org/packages/laravel/framework)
+This api was created using laravel, because the implementation of this api using other framework would take more time 
+to do it and also because is very accessible and powerfull to use laravel.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable, creative experience to be truly fulfilling. Laravel attempts to take the pain out of development by easing common tasks used in the majority of web projects, such as authentication, routing, sessions, queueing, and caching.
+This api also can restrict the name fields that are returned in the api, but this functionality has not been implemented in the controller. 
+Only on Model. 
 
-Laravel is accessible, yet powerful, providing powerful tools needed for large, robust applications. A superb inversion of control container, expressive migration system, and tightly integrated unit testing support give you the tools you need to build any application with which you are tasked.
 
-## Official Documentation
+## Using api
 
-Documentation for the framework can be found on the [Laravel website](http://laravel.com/docs).
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](http://laravel.com/docs/contributions).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell at taylor@laravel.com. All security vulnerabilities will be promptly addressed.
-
+Resources, RECIPE:
+    api/recipe/gettoken [GET], get token to be used in post and put methods
+    api/recipe [GET], list all recipes without any filter and with pagination (limit and offset are the headers parameters used to created pagination)
+    api/recipe/{id} [GET], return information of recipe, by it's id selected
+    api/recipe/{name_field}/{value_field} [GET], returns recipes filtered by any name field and value fields selected
+    api/recipe [POST], used to creat a recipe
+    api/recipe/{id} [PUT], used to update any recipe by it's id
+    
+Fields:     
+{id}, id of recipe
+{name_field}, any field name of recipe model
+{value_field}, any field value that a person wants to search
+ 
 ### License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT)

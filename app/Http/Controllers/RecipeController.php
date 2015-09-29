@@ -163,7 +163,56 @@ class RecipeController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        try{
+            $allReqInf = $request->all();
+
+
+
+            //validate resource exists
+            if(isset($allReqInf['id'])){
+                $resultJson = $this->show($allReqInf['id']);
+                $resultArr = json_decode($resultJson->content(), 'true');
+                if(array_key_exists('error', $resultArr) ){
+                    throw new \Exception('Error reading information');
+                }
+                if(count($resultArr['recipe']) == 0){
+                    throw new \Exception('Resource does not exist');
+                }
+            }else{
+                throw new \Exception('Resource does not exist');
+            }
+
+
+
+
+            //update recipe
+            $recipe = new Recipe();
+            $lstFields = $recipe::getFieldsModel();
+
+
+
+            $arrInfFields = [];
+            foreach($lstFields as $field){
+                if(array_key_exists ( $field , $allReqInf )){
+                    $arrInfFields[$field] = $request->input($field);
+                }
+            }
+
+
+            $result = $recipe->update($arrInfFields);
+
+
+            $statusCode = 200;
+            $response = [ "result" => $result, '_token'=>csrf_token()];
+
+        }catch (\Exception $e){
+            $response = [
+                "error" => $e->getMessage()
+            ];
+            $statusCode = 404;
+        }finally{
+            return Response::json($response, $statusCode);
+        }
     }
 
     /**

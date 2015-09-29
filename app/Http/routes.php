@@ -19,13 +19,16 @@ Route::get('/', function () {
 Route::group(array('prefix' => 'api/'), function()
 {
     Route::get('recipe/gettoken', 'RecipeController@getToken');
-    
+
+    Route::get('recipe', 'RecipeController@index');
     Route::get('recipe/{id}', 'RecipeController@show');
     Route::get('recipe/{name_field}/{value_field}', 'RecipeController@listByfield');
     
     Route::post('recipe', 'RecipeController@store');
-    
-    Route::get('recipe', 'RecipeController@index');
+
+
+    Route::put('recipe/{id}', 'RecipeController@update');
+
     
     
 });

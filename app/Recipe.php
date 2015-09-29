@@ -41,27 +41,61 @@ class Recipe extends Model
         'origin_country',
         'recipe_cuisine',
         'in_your_box',
-        'gousto_reference'];
+        'gousto_reference',
+        'rate'
+    ];
 
     public static function getFieldsModel()
     {
         return self::$lstFieldsModel;
     }
+
+
+    private static $fileCsv = '';
+    public static function setFileCsv($file){
+        self::$fileCsv = $file;
+    }
+    public static function getFileCsv(){
+        return self::$fileCsv;
+    }
+
+    private static $tempFileCsv =  '';
+    public static function setTempFileCsv($file){
+        self::$tempFileCsv = $file;
+    }
+    public static function getTempFileCsv(){
+        return self::$tempFileCsv;
+    }
+
+
     /**
      * Read excel files to all functions in this model
      *
      * @return mixed
      */
-    private static function loadXlsFile($typeRead){
-        //read exel files
-        $csvReader = Reader::createFromPath(storage_path() . '/recipes.csv');
-        $csvReader->setDelimiter("\t");
-        
-        $csvWriter = Writer::createFromPath(storage_path() . '/recipes.csv', 'a');
-        $csvWriter->setDelimiter("\t");
-        
+    private static function loadXlsFile($typeRead, $type='plugin'){
+        if($type == 'plugin'){
+            $csvReader = Reader::createFromPath(storage_path() . '/recipes.csv');
+            $csvReader->setDelimiter("\t");
+
+            $csvWriter = Writer::createFromPath(storage_path() . '/recipes.csv', 'a');
+            $csvWriter->setDelimiter("\t");
+        }
+
+        if($type == 'file'){
+            self::setFileCsv(storage_path() . '/recipes.csv');
+            $csvReader = fopen(self::getFileCsv(),'r');
+
+
+            //self::setTempFileCsv(tempnam(storage_path(), "tmp") );
+            self::setTempFileCsv(storage_path() . '/recipes.tmp');
+            $csvWriter = fopen(self::getTempFileCsv(),'w');
+        }
+
         $reader = array('reader'=>$csvReader, 'writer'=>$csvWriter);
-        
+
+
+
         return $reader[$typeRead];
     }
     
@@ -115,7 +149,7 @@ class Recipe extends Model
         $valueField = $extraParams['valueField'];
         
         $offsetHeader = $request->header('offset');
-        $offset = isset($offsetHeader) && !empty($offsetHeader) ? $offsetHeader : 1;
+        $offset = isset($offsetHeader) && !empty($offsetHeader) ? $offsetHeader+1 : 1;
         
         $limitHeader = $request->header('limit');
         $limit = isset($limitHeader) && !empty($limitHeader) ? $limitHeader : 5;
@@ -143,6 +177,9 @@ class Recipe extends Model
             $csv->addFilter(function ($row) use ($extraParams) {
                 return (string)$extraParams['valueField'] == (string)$row[$extraParams['keyValueSelected']];
             });
+
+            //fix offset, and don't count with row table header names
+            $offset = $offset - 1;
         }
 
         //make pagination
@@ -155,7 +192,9 @@ class Recipe extends Model
                   
         return $result;
     }
-    
+
+
+
     public function setFieldsSave($arrInfFields){
         self::$fieldsSave = $arrInfFields;
     }
@@ -172,8 +211,8 @@ class Recipe extends Model
         $csvWriter = self::loadXlsFile('writer');
         $csvReader = self::loadXlsFile('reader');
 
-        
-        //GET LAST ID
+
+        //GET LAST ID, that all values in row
         $csvReader->addFilter(function ($row) {
                         return isset($row[0], $row[1], $row[2], $row[3], $row[4],
                                     $row[5], $row[6], $row[7], $row[8], $row[9],
@@ -184,7 +223,9 @@ class Recipe extends Model
                     });
         $data = $csvReader->fetchAssoc($fieldsModel);
         $idToBeInserted = count($data);
-        
+
+
+
         //insert missing fields 
         $this->id = $idToBeInserted;
         $this->created_at = date('d/m/Y H:i:s');
@@ -209,4 +250,70 @@ class Recipe extends Model
         return $result;
     }
 
+
+    /**
+     * Update the specified resource
+     *
+     * @param  int  $id
+     * @return Response
+     */
+    public function update(array $attributes = [])
+    {
+
+
+        $idField = '';
+        $fieldsNotToSet = ['id', 'created_at', 'updated_at'];
+        foreach($attributes as $key => $value){
+            if(in_array($key, $fieldsNotToSet)){
+                if($key == 'id'){
+                    $idField = $value;
+                }
+                unset($attributes[$key]);
+            }
+        }
+
+
+        $csvReader = self::loadXlsFile('reader', 'file');
+        $csvWriter = self::loadXlsFile('writer', 'file');
+
+
+        if(!$csvReader || !$csvWriter){
+            throw new \Exception('Could not open csv file');
+        }
+
+        $result = 'OK';
+        $flagNoErrors = 0;
+        while(($data = fgetcsv($csvReader, null, "\t")) !== FALSE){
+            //validate that id exists, so we can change the information
+            if($data[0] == $idField){
+                $fieldsModel = self::getFieldsModel();
+
+                foreach($attributes as $key=>$value){
+                    //validate all fields
+                    if($key == 'rate' && ($value < 1 || $value > 5 ) ){
+                        $result = 'KO';
+                    }
+
+                    if($result == 'OK'){
+                        $indexValue = array_search($key, $fieldsModel);
+                        $data[$indexValue] = $value;
+                    }
+
+                }
+            }
+
+            fputcsv($csvWriter,$data, "\t");
+        }
+
+
+        fclose($csvReader);
+        fclose($csvWriter);
+
+        unlink(self::getFileCsv());
+        rename(self::getTempFileCsv(),self::getFileCsv());
+
+
+
+        return $result;
+    }
 }
