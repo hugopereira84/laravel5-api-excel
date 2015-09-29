@@ -10,7 +10,7 @@ Only on Model.
 ## Using api
 
 Resources: <br><br>
-**RECIPE**:<br>
+>**RECIPE**:<br>
     >api/recipe/gettoken [GET], get token to be used in post and put methods<br>
     api/recipe [GET], list all recipes without any filter and with pagination (limit and offset are the headers parameters used to created pagination)<br>
     api/recipe/{id} [GET], return information of recipe, by it's id selected<br>
