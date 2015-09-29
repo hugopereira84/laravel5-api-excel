@@ -9,17 +9,18 @@ Only on Model.
 
 ## Using api
 
-Resources, RECIPE:
-    api/recipe/gettoken [GET], get token to be used in post and put methods
-    api/recipe [GET], list all recipes without any filter and with pagination (limit and offset are the headers parameters used to created pagination)
-    api/recipe/{id} [GET], return information of recipe, by it's id selected
-    api/recipe/{name_field}/{value_field} [GET], returns recipes filtered by any name field and value fields selected
-    api/recipe [POST], used to creat a recipe
+Resources: <br><br>
+**RECIPE**:<br>
+    >api/recipe/gettoken [GET], get token to be used in post and put methods<br>
+    api/recipe [GET], list all recipes without any filter and with pagination (limit and offset are the headers parameters used to created pagination)<br>
+    api/recipe/{id} [GET], return information of recipe, by it's id selected<br>
+    api/recipe/{name_field}/{value_field} [GET], returns recipes filtered by any name field and value fields selected<br>
+    api/recipe [POST], used to creat a recipe<br>
     api/recipe/{id} [PUT], used to update any recipe by it's id
     
-Fields:     
-{id}, id of recipe
-{name_field}, any field name of recipe model
+>>**Fields**:     
+{id}, id of recipe<br>
+{name_field}, any field name of recipe model<br>
 {value_field}, any field value that a person wants to search
  
 ### License
